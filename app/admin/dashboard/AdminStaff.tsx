@@ -122,16 +122,22 @@ export default function AdminStaff() {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs font-bold text-slate-700 uppercase">Role</label>
-                                <div className="flex gap-2 mt-1">
+                                <div className="grid grid-cols-3 gap-2 mt-1">
                                     <button
                                         onClick={() => setForm({ ...form, role: Role.WAITER })}
-                                        className={`flex-1 py-2 rounded text-sm font-medium border ${form.role === Role.WAITER ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-600'}`}
+                                        className={`py-2 rounded text-sm font-medium border ${form.role === Role.WAITER ? 'bg-blue-50 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-600'}`}
                                     >
                                         Waiter
                                     </button>
                                     <button
+                                        onClick={() => setForm({ ...form, role: Role.KITCHEN })}
+                                        className={`py-2 rounded text-sm font-medium border ${form.role === Role.KITCHEN ? 'bg-orange-50 border-orange-500 text-orange-700' : 'border-slate-200 text-slate-600'}`}
+                                    >
+                                        Kitchen
+                                    </button>
+                                    <button
                                         onClick={() => setForm({ ...form, role: Role.ADMIN })}
-                                        className={`flex-1 py-2 rounded text-sm font-medium border ${form.role === Role.ADMIN ? 'bg-purple-50 border-purple-500 text-purple-700' : 'border-slate-200 text-slate-600'}`}
+                                        className={`py-2 rounded text-sm font-medium border ${form.role === Role.ADMIN ? 'bg-purple-50 border-purple-500 text-purple-700' : 'border-slate-200 text-slate-600'}`}
                                     >
                                         Admin
                                     </button>
@@ -142,7 +148,7 @@ export default function AdminStaff() {
                                 <input
                                     value={form.staffId}
                                     onChange={e => setForm({ ...form, staffId: e.target.value.toUpperCase() })}
-                                    placeholder={form.role === Role.WAITER ? "e.g. W005" : "e.g. ADMIN02"}
+                                    placeholder={form.role === Role.WAITER ? "e.g. W005" : form.role === Role.KITCHEN ? "e.g. K001" : "e.g. ADMIN02"}
                                     className="input w-full"
                                 />
                             </div>
