@@ -1,0 +1,171 @@
+// Restaurant QR Ordering System - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Enums (SQLite doesn't support native enums, so we use String fields)
+// Role: ADMIN, WAITER
+// TableStatus: FREE, ACTIVE, BILL_REQUESTED
+// OrderItemStatus: ADDED, PREPARING, SERVED, BILLED
+
+
+// Staff Management
+model Staff {
+  id        String   @id @default(cuid())
+  staffId   String   @unique // For login (e.g., "W001", "A001")
+  name      String
+  pin       String   // Hashed PIN
+  role      String   // ADMIN or WAITER
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tableSessions TableSession[]
+  auditLogs     AuditLog[]
+
+  @@index([staffId])
+}
+
+// Table Management
+model Table {
+  id            String   @id @default(cuid())
+  tableNumber   String   @unique
+  qrCode        String   @unique // QR code identifier
+  capacity      Int      @default(4)
+  status        String      @default("FREE") // FREE, ACTIVE, BILL_REQUESTED
+  location      String      @default("AC")   // AC, NON_AC
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tableSessions TableSession[]
+
+  @@index([tableNumber])
+  @@index([status])
+}
+
+// Table Session (One active session per table)
+model TableSession {
+  id              String        @id @default(cuid())
+  sessionId       String        @unique @default(cuid())
+  tableId         String
+  assignedWaiterId String?
+  status          String        @default("ACTIVE") // FREE, ACTIVE, BILL_REQUESTED
+  startedAt       DateTime      @default(now())
+  billRequestedAt DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  table           Table         @relation(fields: [tableId], references: [id])
+  assignedWaiter  Staff?        @relation(fields: [assignedWaiterId], references: [id])
+  orders          Order[]
+
+  @@index([tableId])
+  @@index([sessionId])
+  @@index([status])
+}
+
+// Order (Container for order items in a session)
+model Order {
+  id              String        @id @default(cuid())
+  tableSessionId  String
+  orderNumber     Int           // Sequential number for the session
+  subtotal        Float         @default(0)
+  tax             Float         @default(0)
+  discount        Float         @default(0)
+  total           Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  tableSession    TableSession  @relation(fields: [tableSessionId], references: [id])
+  orderItems      OrderItem[]
+
+  @@index([tableSessionId])
+}
+
+// Order Items (Individual items ordered)
+model OrderItem {
+  id              String          @id @default(cuid())
+  orderId         String
+  menuItemId      String
+  quantity        Int             @default(1)
+  price           Float           // Price at time of order
+  status          String          @default("ADDED") // ADDED, PREPARING, SERVED, BILLED
+  notes           String?         // Special instructions
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // Relations
+  order           Order           @relation(fields: [orderId], references: [id])
+  menuItem        MenuItem        @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// Menu Categories
+model MenuCategory {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  sortOrder   Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  menuItems   MenuItem[]
+
+  @@index([sortOrder])
+}
+
+// Menu Items
+model MenuItem {
+  id          String       @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?
+  price       Float
+  image       String?      // Image URL or path
+  isAvailable Boolean      @default(true)
+  isVeg       Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  category    MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+
+  @@index([categoryId])
+  @@index([isAvailable])
+}
+
+// Audit Log (For admin overrides and important actions)
+model AuditLog {
+  id          String   @id @default(cuid())
+  staffId     String
+  action      String   // e.g., "REMOVE_ITEM", "APPLY_DISCOUNT", "REASSIGN_WAITER"
+  entityType  String   // e.g., "ORDER_ITEM", "TABLE_SESSION"
+  entityId    String
+  reason      String   // Mandatory reason for override
+  metadata    String?  // JSON string for additional data
+  createdAt   DateTime @default(now())
+
+  // Relations
+  staff       Staff    @relation(fields: [staffId], references: [id])
+
+  @@index([staffId])
+  @@index([entityType])
+  @@index([createdAt])
+}
