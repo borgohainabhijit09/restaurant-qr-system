@@ -27,18 +27,21 @@ Commit and push your code to a GitHub repository.
    - This will automatically populate the `POSTGRES_PRISMA_URL` and other environment variables for you.
 4. Click **Deploy**.
 
-### 4. Run Migrations (Post-Deploy)
-Since Vercel builds the app, you need to ensure the database schema is created.
-You can add a build command in `package.json` or use the Vercel Command:
+### 4. Build Configuration (Already Done!)
+The project is already configured with the necessary build scripts:
 
-**Recommended**: update your `package.json` scripts:
 ```json
 "scripts": {
-  "postinstall": "prisma generate",
-  "build": "prisma db push && next build"
+  "postinstall": "prisma generate",  // ✅ Already configured
+  "build": "next build"
 }
 ```
-*Note: `prisma db push` will sync your schema to the Postgres DB during the build process.*
+
+**Note:** The `postinstall` script ensures Prisma Client is generated automatically on Vercel. If you need to run migrations, you can update the build script to:
+```json
+"build": "prisma db push && next build"
+```
+*This will sync your schema to the Postgres DB during the build process.*
 
 ### 5. Done!
 Your app will now run on Vercel with a persistent Cloud Database.
