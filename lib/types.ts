@@ -1,5 +1,7 @@
 // Enums for type safety (matching database string values)
 
+import { Prisma } from '@prisma/client';
+
 export enum Role {
     ADMIN = 'ADMIN',
     WAITER = 'WAITER',
@@ -32,3 +34,32 @@ export function isValidTableStatus(status: string): status is TableStatus {
 export function isValidOrderItemStatus(status: string): status is OrderItemStatus {
     return Object.values(OrderItemStatus).includes(status as OrderItemStatus);
 }
+
+// --- Session Types ---
+
+export type TableSessionBase = Prisma.TableSessionGetPayload<{}>;
+
+// The canonical "Rich" session used in UI
+export type TableSessionWithDetails = Prisma.TableSessionGetPayload<{
+    include: {
+        orders: {
+            include: {
+                orderItems: {
+                    include: {
+                        menuItem: {
+                            include: {
+                                category: true;
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        assignedWaiter: {
+            select: {
+                name: true;
+                staffId: true;
+            };
+        };
+    };
+}>;

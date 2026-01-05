@@ -98,6 +98,39 @@ export async function getTableByNumber(tableNumber: string) {
     }
 }
 
+export async function getTableSessionById(sessionId: string) {
+    try {
+        const session = await prisma.tableSession.findUnique({
+            where: { id: sessionId },
+            include: {
+                orders: {
+                    include: {
+                        orderItems: {
+                            include: {
+                                menuItem: {
+                                    include: {
+                                        category: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                assignedWaiter: {
+                    select: {
+                        name: true,
+                        staffId: true,
+                    },
+                },
+            },
+        });
+        return session;
+    } catch (error) {
+        console.error('Error fetching session:', error);
+        return null;
+    }
+}
+
 export async function createOrResumeTableSession(tableId: string) {
     try {
         // Check if there's an active session

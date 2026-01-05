@@ -1,8 +1,9 @@
-import { notFound, redirect } from 'next/navigation';
-import { getTableByNumber, createOrResumeTableSession } from '@/app/actions/tables';
+import { notFound } from 'next/navigation';
+import { getTableByNumber, createOrResumeTableSession, getTableSessionById } from '@/app/actions/tables';
 import { getMenuWithCategories } from '@/app/actions/menu';
 import { getSessionOrders } from '@/app/actions/orders';
 import TableOrderingClient from './TableOrderingClient';
+import { TableSessionWithDetails } from '@/lib/types';
 
 interface PageProps {
     params: Promise<{
@@ -20,12 +21,15 @@ export default async function TablePage({ params }: PageProps) {
         notFound();
     }
 
-    // Create or resume session
-    let session = table.tableSessions[0];
+    // 1. Initialize session variable with the explicit Detailed type
+    let session: TableSessionWithDetails | null | undefined = table.tableSessions[0] as TableSessionWithDetails | undefined;
 
+    // 2. If no active session exists, create one and fetch its full details
     if (!session) {
-        const newSession = await createOrResumeTableSession(table.id);
-        if (!newSession) {
+        // Create basic session
+        const basicSession = await createOrResumeTableSession(table.id);
+
+        if (!basicSession) {
             return (
                 <div className="min-h-screen flex items-center justify-center">
                     <div className="text-center">
@@ -35,7 +39,23 @@ export default async function TablePage({ params }: PageProps) {
                 </div>
             );
         }
-        session = newSession;
+
+        // Fetch fully hydrated session with relations (Correct Architectural Pattern)
+        // This avoids manually constructing objects and ensures strict type consistency
+        const fullSession = await getTableSessionById(basicSession.id);
+
+        if (!fullSession) {
+            return (
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                        <h1 className="text-2xl font-bold text-red-600 mb-2">Error</h1>
+                        <p className="text-slate-600">Failed to load session details</p>
+                    </div>
+                </div>
+            );
+        }
+
+        session = fullSession as TableSessionWithDetails;
     }
 
     // Get menu
